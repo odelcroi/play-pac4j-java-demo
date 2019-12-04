@@ -1,10 +1,6 @@
 package controllers;
 
-import be.objectify.deadbolt.java.actions.SubjectPresent;
 import com.google.inject.Inject;
-import model.JsonContent;
-import modules.SecurityModule;
-import org.pac4j.cas.profile.CasProxyProfile;
 import org.pac4j.core.client.Client;
 import org.pac4j.core.config.Config;
 import org.pac4j.core.context.Pac4jConstants;
@@ -12,17 +8,12 @@ import org.pac4j.core.exception.HttpAction;
 import org.pac4j.core.exception.TechnicalException;
 import org.pac4j.core.profile.CommonProfile;
 import org.pac4j.core.profile.ProfileManager;
-import org.pac4j.core.util.CommonHelper;
 import org.pac4j.http.client.indirect.FormClient;
-import org.pac4j.jwt.config.signature.SecretSignatureConfiguration;
-import org.pac4j.jwt.profile.JwtGenerator;
 import org.pac4j.play.PlayWebContext;
 import org.pac4j.play.java.Secure;
 import org.pac4j.play.store.PlaySessionStore;
 import play.mvc.Controller;
 import play.mvc.Result;
-import play.twirl.api.Content;
-import util.Utils;
 
 import java.util.List;
 
@@ -54,10 +45,6 @@ public class Application extends Controller {
         return ok(views.html.protectedIndex.render(getProfiles()));
     }
 
-    @Secure(clients = "FacebookClient", matchers = "excludedPath")
-    public Result facebookIndex() {
-        return protectedIndexView();
-    }
 
     private Result notProtectedIndexView() {
         // profiles
@@ -68,32 +55,77 @@ public class Application extends Controller {
         return notProtectedIndexView();
     }
 
-    @Secure(clients = "FacebookClient", authorizers = "admin")
-    public Result facebookAdminIndex() {
-        return protectedIndexView();
-    }
-
-    @Secure(clients = "FacebookClient", authorizers = "custom")
-    public Result facebookCustomIndex() {
-        return protectedIndexView();
-    }
-
-    @Secure(clients = "TwitterClient,FacebookClient")
-    public Result twitterIndex() {
-        return protectedIndexView();
-    }
 
     @Secure
     public Result protectedIndex() {
         return protectedIndexView();
     }
 
+
+
+    @Secure(clients = "SAML2Client")
+    public Result samlIndex() {
+        return protectedIndexView();
+    }
+
+
+    public Result loginForm() throws TechnicalException {
+        final FormClient formClient = (FormClient) config.getClients().findClient("FormClient");
+        return ok(views.html.loginForm.render(formClient.getCallbackUrl()));
+    }
+
+
+    public Result forceLogin() {
+        final PlayWebContext context = new PlayWebContext(ctx(), playSessionStore);
+        final Client client = config.getClients().findClient(context.getRequestParameter(Pac4jConstants.DEFAULT_CLIENT_NAME_PARAMETER));
+        try {
+            final HttpAction action = client.redirect(context);
+            return (Result) config.getHttpActionAdapter().adapt(action.getCode(), context);
+        } catch (final HttpAction e) {
+            throw new TechnicalException(e);
+        }
+    }
+
+
+    /*
+    public Result jwt() {
+        final List<CommonProfile> profiles = getProfiles();
+        final JwtGenerator generator = new JwtGenerator(new SecretSignatureConfiguration(SecurityModule.JWT_SALT));
+        String token = "";
+        if (CommonHelper.isNotEmpty(profiles)) {
+            token = generator.generate(profiles.get(0));
+        }
+        return ok(views.html.jwt.render(token));
+    }
+    */
+
+
+    /*
+    @Secure(clients = "OidcClient")
+    public Result oidcIndex() {
+        return protectedIndexView();
+    }
+
+    //@Secure(clients = "ParameterClient")
+    //@SubjectPresent(handlerKey = "ParameterClient")
+    public Result restJwtIndex() {
+        return protectedIndexView();
+    }
+
+    //@Secure(clients = "AnonymousClient", authorizers = "csrfCheck")
+    public Result csrfIndex() {
+        return ok(views.html.csrf.render(getProfiles()));
+    }
+    */
+
+       /*
     //@Secure(clients = "FormClient")
     @SubjectPresent(handlerKey = "FormClient", forceBeforeAuthCheck = true)
     public Result formIndex() {
         return protectedIndexView();
     }
-
+    */
+/*
     // Setting the isAjax parameter is no longer necessary as AJAX requests are automatically detected:
     // a 401 error response will be returned instead of a redirection to the login url.
     @Secure(clients = "FormClient")
@@ -116,6 +148,7 @@ public class Application extends Controller {
         return protectedIndexView();
     }
 
+
     @Secure(clients = "CasClient")
     public Result casIndex() {
         final CommonProfile profile = getProfiles().get(0);
@@ -127,51 +160,31 @@ public class Application extends Controller {
         }
         return ok(views.html.casProtectedIndex.render(profile, service, proxyTicket));
     }
+    */
 
-    @Secure(clients = "SAML2Client")
-    public Result samlIndex() {
+
+    /*
+    @Secure(clients = "FacebookClient", authorizers = "admin")
+    public Result facebookAdminIndex() {
         return protectedIndexView();
     }
 
-    @Secure(clients = "OidcClient")
-    public Result oidcIndex() {
+    @Secure(clients = "FacebookClient", authorizers = "custom")
+    public Result facebookCustomIndex() {
         return protectedIndexView();
     }
 
-    //@Secure(clients = "ParameterClient")
-    //@SubjectPresent(handlerKey = "ParameterClient")
-    public Result restJwtIndex() {
+    @Secure(clients = "TwitterClient,FacebookClient")
+    public Result twitterIndex() {
         return protectedIndexView();
     }
+    */
 
-    //@Secure(clients = "AnonymousClient", authorizers = "csrfCheck")
-    public Result csrfIndex() {
-        return ok(views.html.csrf.render(getProfiles()));
-    }
 
-    public Result loginForm() throws TechnicalException {
-        final FormClient formClient = (FormClient) config.getClients().findClient("FormClient");
-        return ok(views.html.loginForm.render(formClient.getCallbackUrl()));
+    /*
+    @Secure(clients = "FacebookClient", matchers = "excludedPath")
+    public Result facebookIndex() {
+        return protectedIndexView();
     }
-
-    public Result jwt() {
-        final List<CommonProfile> profiles = getProfiles();
-        final JwtGenerator generator = new JwtGenerator(new SecretSignatureConfiguration(SecurityModule.JWT_SALT));
-        String token = "";
-        if (CommonHelper.isNotEmpty(profiles)) {
-            token = generator.generate(profiles.get(0));
-        }
-        return ok(views.html.jwt.render(token));
-    }
-
-    public Result forceLogin() {
-        final PlayWebContext context = new PlayWebContext(ctx(), playSessionStore);
-        final Client client = config.getClients().findClient(context.getRequestParameter(Pac4jConstants.DEFAULT_CLIENT_NAME_PARAMETER));
-        try {
-            final HttpAction action = client.redirect(context);
-            return (Result) config.getHttpActionAdapter().adapt(action.getCode(), context);
-        } catch (final HttpAction e) {
-            throw new TechnicalException(e);
-        }
-    }
+    */
 }

@@ -1,37 +1,15 @@
 package modules;
 
-import be.objectify.deadbolt.java.cache.HandlerCache;
 import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
 import com.google.inject.Provides;
 import controllers.CustomAuthorizer;
 import controllers.DemoHttpActionAdapter;
-import org.pac4j.cas.client.CasClient;
-import org.pac4j.cas.client.CasProxyReceptor;
-import org.pac4j.cas.config.CasConfiguration;
 import org.pac4j.core.authorization.authorizer.RequireAnyRoleAuthorizer;
 import org.pac4j.core.client.Clients;
 import org.pac4j.core.client.direct.AnonymousClient;
 import org.pac4j.core.config.Config;
-import org.pac4j.core.credentials.UsernamePasswordCredentials;
-import org.pac4j.core.credentials.authenticator.Authenticator;
-import org.pac4j.core.matching.PathMatcher;
-import org.pac4j.core.profile.CommonProfile;
-import org.pac4j.http.client.direct.DirectBasicAuthClient;
-import org.pac4j.http.client.direct.ParameterClient;
-import org.pac4j.http.client.indirect.FormClient;
-import org.pac4j.http.client.indirect.IndirectBasicAuthClient;
-import org.pac4j.http.credentials.authenticator.test.SimpleTestUsernamePasswordAuthenticator;
-import org.pac4j.jwt.config.signature.SecretSignatureConfiguration;
-import org.pac4j.jwt.credentials.authenticator.JwtAuthenticator;
-import org.pac4j.oauth.client.FacebookClient;
-import org.pac4j.oauth.client.TwitterClient;
-import org.pac4j.oidc.client.OidcClient;
-import org.pac4j.oidc.config.OidcConfiguration;
 import org.pac4j.play.CallbackController;
 import org.pac4j.play.LogoutController;
-import org.pac4j.play.deadbolt2.Pac4jHandlerCache;
-import org.pac4j.play.deadbolt2.Pac4jRoleHandler;
 import org.pac4j.play.store.PlayCacheSessionStore;
 import org.pac4j.play.store.PlaySessionStore;
 import org.pac4j.saml.client.SAML2Client;
@@ -40,30 +18,28 @@ import play.Environment;
 
 import java.io.File;
 
-import org.pac4j.http.client.direct.DirectFormClient;
 import play.cache.SyncCacheApi;
-import util.Utils;
 
 public class SecurityModule extends AbstractModule {
 
-    public final static String JWT_SALT = "12345678901234567890123456789012";
+    //public final static String JWT_SALT = "12345678901234567890123456789012";
 
-    private final com.typesafe.config.Config configuration;
+    //private final com.typesafe.config.Config configuration;
 
-    private static class MyPac4jRoleHandler implements Pac4jRoleHandler { }
+    //private static class MyPac4jRoleHandler implements Pac4jRoleHandler { }
 
     private final String baseUrl;
 
     public SecurityModule(final Environment environment, final com.typesafe.config.Config configuration) {
-        this.configuration = configuration;
+        //this.configuration = configuration;
         this.baseUrl = configuration.getString("baseUrl");
     }
 
     @Override
     protected void configure() {
 
-        bind(HandlerCache.class).to(Pac4jHandlerCache.class);
-        bind(Pac4jRoleHandler.class).to(MyPac4jRoleHandler.class);
+        //bind(HandlerCache.class).to(Pac4jHandlerCache.class);
+        //bind(Pac4jRoleHandler.class).to(MyPac4jRoleHandler.class);
 
         final PlayCacheSessionStore playCacheSessionStore = new PlayCacheSessionStore(getProvider(SyncCacheApi.class));
         //bind(PlaySessionStore.class).toInstance(playCacheSessionStore);
@@ -83,13 +59,42 @@ public class SecurityModule extends AbstractModule {
         bind(LogoutController.class).toInstance(logoutController);
     }
 
+
+    @Provides
+    protected SAML2Client provideSaml2Client() {
+        final SAML2ClientConfiguration cfg = new SAML2ClientConfiguration("resource:samlKeystore.jks",
+                "pac4j-demo-passwd", "pac4j-demo-passwd", "resource:openidp-feide.xml");
+        cfg.setMaximumAuthenticationLifetime(3600);
+        cfg.setServiceProviderEntityId("urn:mace:saml:pac4j.org");
+        cfg.setServiceProviderMetadataPath(new File("target", "sp-metadata.xml").getAbsolutePath());
+        return new SAML2Client(cfg);
+    }
+
+    @Provides
+    protected Config provideConfig(SAML2Client saml2Client  ) {
+
+        //casClient.getConfiguration().setProxyReceptor(casProxyReceptor);
+
+        final Clients clients = new Clients(baseUrl + "/callback", saml2Client,
+                new AnonymousClient());
+
+        final Config config = new Config(clients);
+        config.addAuthorizer("admin", new RequireAnyRoleAuthorizer<>("ROLE_ADMIN"));
+        config.addAuthorizer("custom", new CustomAuthorizer());
+        //config.addMatcher("excludedPath", new PathMatcher().excludeRegex("^/facebook/notprotected\\.html$"));
+        config.setHttpActionAdapter(new DemoHttpActionAdapter());
+        return config;
+    }
+
+    /*
     @Provides
     protected FacebookClient provideFacebookClient() {
         final String fbId = configuration.getString("fbId");
         final String fbSecret = configuration.getString("fbSecret");
         return new FacebookClient(fbId, fbSecret);
     }
-
+    */
+/*
     @Provides
     protected TwitterClient provideTwitterClient() {
         return new TwitterClient("HVSQGAw2XmiwcKOTvZFbQ", "FSiO9G9VRR4KCuksky0kgGuo8gAVndYymr4Nl7qc8AA");
@@ -119,17 +124,10 @@ public class SecurityModule extends AbstractModule {
         //final CasConfiguration casConfiguration = new CasConfiguration("http://localhost:8888/cas/login");
         return new CasClient(casConfiguration);
     }
+    */
 
-    @Provides
-    protected SAML2Client provideSaml2Client() {
-        final SAML2ClientConfiguration cfg = new SAML2ClientConfiguration("resource:samlKeystore.jks",
-                "pac4j-demo-passwd", "pac4j-demo-passwd", "resource:openidp-feide.xml");
-        cfg.setMaximumAuthenticationLifetime(3600);
-        cfg.setServiceProviderEntityId("urn:mace:saml:pac4j.org");
-        cfg.setServiceProviderMetadataPath(new File("target", "sp-metadata.xml").getAbsolutePath());
-        return new SAML2Client(cfg);
-    }
 
+    /*
     @Provides
     protected OidcClient provideOidcClient() {
         final OidcConfiguration oidcConfiguration = new OidcConfiguration();
@@ -170,24 +168,6 @@ public class SecurityModule extends AbstractModule {
     protected DirectBasicAuthClient provideDirectBasicAuthClient() {
         return new DirectBasicAuthClient(new SimpleTestUsernamePasswordAuthenticator());
     }
+    */
 
-    @Provides
-    protected Config provideConfig(FacebookClient facebookClient, TwitterClient twitterClient, FormClient formClient,
-                                   IndirectBasicAuthClient indirectBasicAuthClient, CasClient casClient, SAML2Client saml2Client,
-                                   OidcClient oidcClient, ParameterClient parameterClient, DirectBasicAuthClient directBasicAuthClient,
-                                   CasProxyReceptor casProxyReceptor, DirectFormClient directFormClient) {
-
-        //casClient.getConfiguration().setProxyReceptor(casProxyReceptor);
-
-        final Clients clients = new Clients(baseUrl + "/callback", facebookClient, twitterClient, formClient,
-                indirectBasicAuthClient, casClient, saml2Client, oidcClient, parameterClient, directBasicAuthClient,
-                new AnonymousClient(), directFormClient);
-
-        final Config config = new Config(clients);
-        config.addAuthorizer("admin", new RequireAnyRoleAuthorizer<>("ROLE_ADMIN"));
-        config.addAuthorizer("custom", new CustomAuthorizer());
-        config.addMatcher("excludedPath", new PathMatcher().excludeRegex("^/facebook/notprotected\\.html$"));
-        config.setHttpActionAdapter(new DemoHttpActionAdapter());
-        return config;
-    }
 }
