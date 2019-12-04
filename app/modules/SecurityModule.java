@@ -62,16 +62,24 @@ public class SecurityModule extends AbstractModule {
 
     @Provides
     protected SAML2Client provideSaml2Client() {
-        final SAML2ClientConfiguration cfg = new SAML2ClientConfiguration("resource:samlKeystore.jks",
-                "pac4j-demo-passwd", "pac4j-demo-passwd", "resource:openidp-feide.xml");
+//        final SAML2ClientConfiguration cfg = new SAML2ClientConfiguration("resource:samlKeystore.jks",
+  //              "pac4j-demo-passwd", "pac4j-demo-passwd", "resource:openidp-feide.xml");
+
+        final SAML2ClientConfiguration cfg = new SAML2ClientConfiguration(
+                "resource:samlKeystore.jks",
+                "pac4j-demo-passwd",
+                "pac4j-demo-passwd",
+                "resource:ssocircle-meta-idp.xml");
+
         cfg.setMaximumAuthenticationLifetime(3600);
-        cfg.setServiceProviderEntityId("urn:mace:saml:pac4j.org");
-        cfg.setServiceProviderMetadataPath(new File("target", "sp-metadata.xml").getAbsolutePath());
+        //cfg.setServiceProviderEntityId("urn:mace:saml:pac4j.org");
+        cfg.setServiceProviderEntityId("org.limber.io");
+        cfg.setServiceProviderMetadataPath(new File("target", "sp-metadata_limber.xml").getAbsolutePath());
         return new SAML2Client(cfg);
     }
 
     @Provides
-    protected Config provideConfig(SAML2Client saml2Client  ) {
+    protected Config provideConfig(SAML2Client saml2Client) {
 
         //casClient.getConfiguration().setProxyReceptor(casProxyReceptor);
 

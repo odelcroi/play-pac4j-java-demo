@@ -31,6 +31,7 @@ public class Application extends Controller {
         return profileManager.getAll(true);
     }
 
+    //TODO remove this
     @Secure(clients = "AnonymousClient", authorizers = "csrfToken")
     public Result index() throws Exception {
         final PlayWebContext context = new PlayWebContext(ctx(), playSessionStore);
