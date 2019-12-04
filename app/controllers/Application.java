@@ -31,15 +31,6 @@ public class Application extends Controller {
         return profileManager.getAll(true);
     }
 
-    //TODO remove this
-    @Secure(clients = "AnonymousClient", authorizers = "csrfToken")
-    public Result index() throws Exception {
-        final PlayWebContext context = new PlayWebContext(ctx(), playSessionStore);
-        final String sessionId = context.getSessionStore().getOrCreateSessionId(context);
-        final String token = (String) context.getRequestAttribute(Pac4jConstants.CSRF_TOKEN);
-        // profiles (maybe be empty if not authenticated)
-        return ok(views.html.index.render(getProfiles(), token, sessionId));
-    }
 
     private Result protectedIndexView() {
         // profiles
@@ -52,17 +43,11 @@ public class Application extends Controller {
         return ok(views.html.notprotectedIndex.render(getProfiles()));
     }
 
-    public Result facebookNotProtectedIndex() {
-        return notProtectedIndexView();
-    }
-
 
     @Secure
     public Result protectedIndex() {
         return protectedIndexView();
     }
-
-
 
     @Secure(clients = "SAML2Client")
     public Result samlIndex() {
@@ -86,6 +71,24 @@ public class Application extends Controller {
             throw new TechnicalException(e);
         }
     }
+
+    //dont remove this
+    @Secure(clients = "AnonymousClient", authorizers = "csrfToken")
+    public Result index() throws Exception {
+        final PlayWebContext context = new PlayWebContext(ctx(), playSessionStore);
+        final String sessionId = context.getSessionStore().getOrCreateSessionId(context);
+        final String token = (String) context.getRequestAttribute(Pac4jConstants.CSRF_TOKEN);
+        // profiles (maybe be empty if not authenticated)
+        return ok(views.html.index.render(getProfiles(), token, sessionId));
+    }
+
+    /*  */
+
+  /*
+    public Result facebookNotProtectedIndex() {
+        return notProtectedIndexView();
+    }
+    */
 
 
     /*
